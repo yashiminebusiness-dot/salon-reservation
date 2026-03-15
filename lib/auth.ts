@@ -15,12 +15,11 @@ export async function verifyLiffToken(token: string): Promise<string> {
     }),
   })
 
-  if (!res.ok) {
-    throw new Error('Invalid LIFF token')
-  }
-
   const data = await res.json()
-  if (data.error) throw new Error(data.error_description || 'Token verification failed')
+  if (!res.ok || data.error) {
+    console.error('LINE verify error:', JSON.stringify(data))
+    throw new Error(data.error_description || 'Invalid LIFF token')
+  }
 
   return data.sub as string // LINE user ID
 }
@@ -42,7 +41,8 @@ export async function authenticate(
   let lineUserId: string
   try {
     lineUserId = await verifyLiffToken(token)
-  } catch {
+  } catch (err) {
+    console.error('Authentication error:', err)
     return { error: NextResponse.json({ error: 'Invalid token' }, { status: 401 }) }
   }
 
