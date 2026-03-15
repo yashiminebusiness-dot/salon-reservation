@@ -62,16 +62,35 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Database error' }, { status: 500 })
   }
 
-  // 6. Square サブスク支払いページの URL を生成
-  //    コールバック URL に line_user_id を含める
+  // 6. Square サブスク支払いページの URL を動的生成
   const callbackUrl = `${process.env.NEXT_PUBLIC_APP_URL}/register/callback?lid=${encodeURIComponent(lineUserId)}`
+  const baseUrl = process.env.SQUARE_ENVIRONMENT === 'sandbox'
+    ? 'https://connect.squareupsandbox.com'
+    : 'https://connect.squareup.com'
 
-  // NOTE: Square の Subscription は Catalog API でプランを事前作成し、
-  //       Checkout API でチェックアウト URL を発行する。
-  //       ここでは Square の Payment Link で初回課金 + サブスク開始フローを想定。
-  //       詳細は Square ダッシュボードでプランを作成後、その plan_variation_id を使用する。
-  const checkoutUrl = `https://checkout.squareup.com/pay/${process.env.SQUARE_PAYMENT_LINK_ID}` +
-    `?customer_id=${squareCustomer.id}&redirect_url=${encodeURIComponent(callbackUrl)}`
+  const checkoutRes = await fetch(`${baseUrl}/v2/online-checkout/payment-links`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.SQUARE_ACCESS_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      idempotency_key: `register-${lineUserId}-${Date.now()}`,
+      subscription_plan_variation_id: process.env.SQUARE_SUBSCRIPTION_PLAN_VARIATION_ID,
+      pre_populated_data: {
+        buyer_email: email,
+      },
+      checkout_options: {
+        redirect_url: callbackUrl,
+      },
+    }),
+  })
 
-  return NextResponse.json({ checkout_url: checkoutUrl })
+  const checkoutData = await checkoutRes.json()
+  if (!checkoutRes.ok || !checkoutData.payment_link?.url) {
+    console.error('Square checkout creation failed:', JSON.stringify(checkoutData))
+    return NextResponse.json({ error: 'Failed to create checkout' }, { status: 500 })
+  }
+
+  return NextResponse.json({ checkout_url: checkoutData.payment_link.url })
 }
