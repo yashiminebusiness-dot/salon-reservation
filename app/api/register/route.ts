@@ -79,6 +79,7 @@ export async function POST(req: NextRequest) {
       subscription_plan_variation_id: process.env.SQUARE_SUBSCRIPTION_PLAN_VARIATION_ID,
       order: {
         location_id: process.env.SQUARE_LOCATION_ID,
+        reference_id: lineUserId,
         line_items: [{
           name: '月額ホワイトニングプラン',
           quantity: '1',

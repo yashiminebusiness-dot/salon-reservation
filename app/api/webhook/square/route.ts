@@ -175,21 +175,35 @@ async function handleSubscriptionDeactivated(obj: Record<string, unknown>) {
 async function handlePaymentUpdated(obj: Record<string, unknown>) {
   const payment = obj.payment as {
     status?: string
-    customer_id?: string
+    order_id?: string
   } | undefined
 
-  console.log('payment.updated received:', JSON.stringify({ status: payment?.status, customer_id: payment?.customer_id }))
+  console.log('payment.updated received:', JSON.stringify({ status: payment?.status, order_id: payment?.order_id }))
 
-  if (payment?.status !== 'COMPLETED' || !payment.customer_id) {
-    console.log('payment.updated: skipped (status or customer_id missing)', payment?.status, payment?.customer_id)
+  if (payment?.status !== 'COMPLETED' || !payment.order_id) {
+    console.log('payment.updated: skipped (status or order_id missing)', payment?.status, payment?.order_id)
     return
   }
 
-  // 既にサブスク登録済みの場合はスキップ
+  // order_id から reference_id (lineUserId) を取得
+  const baseUrl = process.env.SQUARE_ENVIRONMENT === 'sandbox'
+    ? 'https://connect.squareupsandbox.com'
+    : 'https://connect.squareup.com'
+
+  const orderRes = await fetch(`${baseUrl}/v2/orders/${payment.order_id}`, {
+    headers: { 'Authorization': `Bearer ${process.env.SQUARE_ACCESS_TOKEN}` },
+  })
+  const orderData = await orderRes.json()
+  const lineUserId = orderData.order?.reference_id
+  console.log('payment.updated: order reference_id (lineUserId):', lineUserId)
+
+  if (!lineUserId) return
+
+  // lineUserId で顧客を検索
   const { data: customer } = await supabase
     .from('customers')
-    .select('id, line_user_id, name, subscription_status')
-    .eq('square_customer_id', payment.customer_id)
+    .select('id, line_user_id, name, subscription_status, square_customer_id')
+    .eq('line_user_id', lineUserId)
     .single()
 
   console.log('payment.updated: customer lookup result:', JSON.stringify(customer))
@@ -202,7 +216,7 @@ async function handlePaymentUpdated(obj: Record<string, unknown>) {
   // サブスクリプション作成
   let subscription
   try {
-    subscription = await createSquareSubscription(payment.customer_id)
+    subscription = await createSquareSubscription(customer.square_customer_id)
   } catch (err) {
     console.error('Subscription creation failed:', err)
     return
