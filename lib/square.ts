@@ -102,3 +102,35 @@ export async function getSubscriptionStatus(subscriptionId: string) {
   const result = await squareClient.subscriptions.get({ subscriptionId })
   return result.subscription?.status
 }
+
+/**
+ * Square Subscription を作成する（支払い完了後に呼ぶ）
+ */
+export async function createSquareSubscription(customerId: string) {
+  const baseUrl = process.env.SQUARE_ENVIRONMENT === 'sandbox'
+    ? 'https://connect.squareupsandbox.com'
+    : 'https://connect.squareup.com'
+
+  const today = new Date().toISOString().split('T')[0]
+
+  const res = await fetch(`${baseUrl}/v2/subscriptions`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.SQUARE_ACCESS_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      idempotency_key: `sub-${customerId}-${Date.now()}`,
+      location_id: process.env.SQUARE_LOCATION_ID,
+      plan_variation_id: process.env.SQUARE_SUBSCRIPTION_PLAN_VARIATION_ID,
+      customer_id: customerId,
+      start_date: today,
+    }),
+  })
+
+  const data = await res.json()
+  if (!res.ok || !data.subscription?.id) {
+    throw new Error(`Subscription creation failed: ${JSON.stringify(data)}`)
+  }
+  return data.subscription as { id: string; status: string }
+}

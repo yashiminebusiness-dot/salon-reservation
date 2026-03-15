@@ -3,6 +3,7 @@ import crypto from 'crypto'
 import { supabase } from '@/lib/supabase'
 import { deletePasscode } from '@/lib/sesami'
 import { sendRegistrationComplete, sendSubscriptionDeactivated } from '@/lib/line'
+import { createSquareSubscription } from '@/lib/square'
 
 /**
  * Square Webhook の署名を検証する
@@ -54,6 +55,10 @@ export async function POST(req: NextRequest) {
     }
     case 'invoice.payment_failed': {
       await handlePaymentFailed(event.data.object)
+      break
+    }
+    case 'payment.updated': {
+      await handlePaymentUpdated(event.data.object)
       break
     }
     default:
@@ -161,6 +166,57 @@ async function handleSubscriptionDeactivated(obj: Record<string, unknown>) {
     await sendSubscriptionDeactivated({ lineUserId: customer.line_user_id })
   } catch (err) {
     console.error('LINE deactivation notification failed:', err)
+  }
+}
+
+/**
+ * 支払い完了 → サブスクリプション未作成の場合に作成してアクティブ化
+ */
+async function handlePaymentUpdated(obj: Record<string, unknown>) {
+  const payment = obj.payment as {
+    status?: string
+    customer_id?: string
+  } | undefined
+
+  if (payment?.status !== 'COMPLETED' || !payment.customer_id) return
+
+  // 既にサブスク登録済みの場合はスキップ
+  const { data: customer } = await supabase
+    .from('customers')
+    .select('id, line_user_id, name, subscription_status')
+    .eq('square_customer_id', payment.customer_id)
+    .single()
+
+  if (!customer || customer.subscription_status === 'active') return
+
+  // サブスクリプション作成
+  let subscription
+  try {
+    subscription = await createSquareSubscription(payment.customer_id)
+  } catch (err) {
+    console.error('Subscription creation failed:', err)
+    return
+  }
+
+  // DB 更新
+  await supabase
+    .from('customers')
+    .update({
+      square_subscription_id: subscription.id,
+      subscription_status: 'active',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', customer.id)
+
+  // LINE 登録完了通知
+  try {
+    await sendRegistrationComplete({
+      lineUserId: customer.line_user_id,
+      customerName: customer.name ?? 'お客様',
+      reserveUrl: `${process.env.NEXT_PUBLIC_APP_URL}/reserve`,
+    })
+  } catch (err) {
+    console.error('LINE registration notification failed:', err)
   }
 }
 
