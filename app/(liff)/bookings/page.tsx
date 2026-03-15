@@ -26,7 +26,7 @@ export default function BookingsPage() {
   const fetchBookings = async () => {
     setLoading(true)
     try {
-      const token = liff.getAccessToken()
+      const token = liff.getIDToken()
       const res = await fetch('/api/bookings', {
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -44,7 +44,7 @@ export default function BookingsPage() {
     if (!confirm('予約をキャンセルしますか？')) return
     setCancelling(bookingId)
     try {
-      const token = liff.getAccessToken()
+      const token = liff.getIDToken()
       const res = await fetch('/api/cancel', {
         method: 'POST',
         headers: {

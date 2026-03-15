@@ -32,7 +32,7 @@ export default function MyPage() {
 
   useEffect(() => {
     if (!ready) return
-    const token = liff.getAccessToken()
+    const token = liff.getIDToken()
     fetch('/api/mypage', {
       headers: { Authorization: `Bearer ${token}` },
     })

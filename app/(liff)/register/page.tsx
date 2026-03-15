@@ -31,7 +31,7 @@ export default function RegisterPage() {
     setError(null)
 
     try {
-      const token = liff.getAccessToken()
+      const token = liff.getIDToken()
       const res = await fetch('/api/register', {
         method: 'POST',
         headers: {

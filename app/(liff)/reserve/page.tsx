@@ -54,7 +54,7 @@ export default function ReservePage() {
     setLoading(true)
     setError(null)
     try {
-      const token = liff.getAccessToken()
+      const token = liff.getIDToken()
       const res = await fetch(`/api/slots?from=${fromStr}&to=${toStr}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -80,7 +80,7 @@ export default function ReservePage() {
     setError(null)
 
     try {
-      const token = liff.getAccessToken()
+      const token = liff.getIDToken()
       const res = await fetch('/api/reserve', {
         method: 'POST',
         headers: {

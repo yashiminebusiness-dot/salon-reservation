@@ -6,11 +6,12 @@ import type { Customer } from '@/types'
  * LIFF アクセストークンを検証し、LINE user ID を返す
  */
 export async function verifyLiffToken(token: string): Promise<string> {
+  // id_token で検証（LIFF SDK v2 以降）
   const res = await fetch('https://api.line.me/oauth2/v2.1/verify', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      access_token: token,
+      id_token: token,
       client_id: process.env.LIFF_CHANNEL_ID!,
     }),
   })
