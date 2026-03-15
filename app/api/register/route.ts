@@ -77,9 +77,7 @@ export async function POST(req: NextRequest) {
     body: JSON.stringify({
       idempotency_key: `register-${lineUserId}-${Date.now()}`,
       subscription_plan_variation_id: process.env.SQUARE_SUBSCRIPTION_PLAN_VARIATION_ID,
-      quick_pay: {
-        name: '月額ホワイトニングプラン',
-        price_money: { amount: 5000, currency: 'JPY' },
+      order: {
         location_id: process.env.SQUARE_LOCATION_ID,
       },
       pre_populated_data: {
