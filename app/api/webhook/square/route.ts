@@ -178,7 +178,12 @@ async function handlePaymentUpdated(obj: Record<string, unknown>) {
     customer_id?: string
   } | undefined
 
-  if (payment?.status !== 'COMPLETED' || !payment.customer_id) return
+  console.log('payment.updated received:', JSON.stringify({ status: payment?.status, customer_id: payment?.customer_id }))
+
+  if (payment?.status !== 'COMPLETED' || !payment.customer_id) {
+    console.log('payment.updated: skipped (status or customer_id missing)', payment?.status, payment?.customer_id)
+    return
+  }
 
   // 既にサブスク登録済みの場合はスキップ
   const { data: customer } = await supabase
@@ -187,7 +192,12 @@ async function handlePaymentUpdated(obj: Record<string, unknown>) {
     .eq('square_customer_id', payment.customer_id)
     .single()
 
-  if (!customer || customer.subscription_status === 'active') return
+  console.log('payment.updated: customer lookup result:', JSON.stringify(customer))
+
+  if (!customer || customer.subscription_status === 'active') {
+    console.log('payment.updated: skipped (no customer or already active)')
+    return
+  }
 
   // サブスクリプション作成
   let subscription
