@@ -232,16 +232,7 @@ async function handlePaymentUpdated(obj: Record<string, unknown>) {
     })
     .eq('id', customer.id)
 
-  // LINE 登録完了通知
-  try {
-    await sendRegistrationComplete({
-      lineUserId: customer.line_user_id,
-      customerName: customer.name ?? 'お客様',
-      reserveUrl: `${process.env.NEXT_PUBLIC_APP_URL}/reserve`,
-    })
-  } catch (err) {
-    console.error('LINE registration notification failed:', err)
-  }
+  // LINE 通知は subscription.created webhook 側で行う
 }
 
 /**
