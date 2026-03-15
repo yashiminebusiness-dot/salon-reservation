@@ -35,13 +35,14 @@ export async function createSquareBooking(params: {
   startAt: string
   customerId: string
   serviceVariationId?: string
+  isFirstVisit?: boolean
 }) {
   const result = await squareClient.bookings.create({
-    idempotencyKey: `booking-${params.customerId}-${Date.now()}`,
+    idempotencyKey: `booking-${params.isFirstVisit ? 'first' : params.customerId}-${Date.now()}`,
     booking: {
       startAt: params.startAt,
       locationId: LOCATION_ID,
-      customerId: params.customerId,
+      customerId: params.isFirstVisit ? undefined : params.customerId,
       locationType: 'BUSINESS_LOCATION',
       appointmentSegments: [
         {

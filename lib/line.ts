@@ -131,6 +131,45 @@ export async function sendCancellationConfirmation(params: {
 }
 
 /**
+ * 初回予約確認通知（PIN なし・スタッフ対応）
+ */
+export async function sendFirstVisitConfirmation(params: {
+  lineUserId: string
+  customerName: string
+  startAt: Date
+  phone: string
+}) {
+  const dateStr = params.startAt.toLocaleDateString('ja-JP', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    weekday: 'short',
+    timeZone: 'Asia/Tokyo',
+  })
+  const timeStr = params.startAt.toLocaleTimeString('ja-JP', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Asia/Tokyo',
+  })
+
+  await pushMessage(params.lineUserId, [
+    {
+      type: 'text',
+      text:
+        `【初回予約完了】\n` +
+        `${params.customerName}様、ご予約ありがとうございます！\n\n` +
+        `📅 日時: ${dateStr} ${timeStr}〜\n` +
+        `📞 お電話番号: ${params.phone}\n\n` +
+        `初回はスタッフがご案内いたします。\n` +
+        `ご来店をお待ちしております！\n\n` +
+        `【ご注意】\n` +
+        `・ご来店の際はLINEを開いてお待ちください\n` +
+        `・キャンセル・変更はこのLINEにご連絡ください`,
+    },
+  ])
+}
+
+/**
  * サブスク失効通知
  */
 export async function sendSubscriptionDeactivated(params: {
