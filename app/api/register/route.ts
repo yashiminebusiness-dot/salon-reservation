@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
       subscription_plan_variation_id: process.env.SQUARE_SUBSCRIPTION_PLAN_VARIATION_ID,
       quick_pay: {
         name: '月額ホワイトニングプラン',
-        price_money: { amount: 500000, currency: 'JPY' },
+        price_money: { amount: 5000, currency: 'JPY' },
         location_id: process.env.SQUARE_LOCATION_ID,
       },
       pre_populated_data: {
