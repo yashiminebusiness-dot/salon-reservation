@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
         line_items: [{
           name: '月額ホワイトニングプラン',
           quantity: '1',
-          base_price_money: { amount: 5000, currency: 'JPY' },
+          base_price_money: { amount: 10000, currency: 'JPY' },
         }],
       },
       pre_populated_data: {
