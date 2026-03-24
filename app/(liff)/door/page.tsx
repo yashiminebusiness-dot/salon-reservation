@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import liff from '@line/liff'
 
-const LIFF_ID = process.env.NEXT_PUBLIC_LIFF_ID!
+const LIFF_ID = process.env.NEXT_PUBLIC_LIFF_ID_DOOR!
 
 export default function DoorPage() {
   const [ready, setReady] = useState(false)
