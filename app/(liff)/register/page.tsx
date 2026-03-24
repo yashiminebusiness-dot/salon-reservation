@@ -12,7 +12,7 @@ export default function RegisterPage() {
 
   useEffect(() => {
     const init = async () => {
-      await liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID! })
+      await liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID_REGISTER! })
       if (!liff.isLoggedIn()) {
         liff.login()
         return

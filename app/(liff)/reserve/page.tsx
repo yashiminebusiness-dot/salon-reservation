@@ -35,7 +35,7 @@ export default function ReservePage() {
   const toStr   = weekDates[6].toISOString().slice(0, 10)
 
   useEffect(() => {
-    liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID! }).then(() => {
+    liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID_RESERVE! }).then(() => {
       if (!liff.isLoggedIn()) {
         liff.login()
         return

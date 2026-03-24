@@ -12,7 +12,7 @@ export default function BookingsPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID! }).then(() => {
+    liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID_BOOKINGS! }).then(() => {
       if (!liff.isLoggedIn()) { liff.login(); return }
       setReady(true)
     })
