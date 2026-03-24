@@ -24,7 +24,7 @@ export default function MyPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID! }).then(() => {
+    liff.init({ liffId: process.env.NEXT_PUBLIC_LIFF_ID_MYPAGE! }).then(() => {
       if (!liff.isLoggedIn()) { liff.login(); return }
       setReady(true)
     })
