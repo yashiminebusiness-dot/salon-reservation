@@ -28,9 +28,7 @@ export async function sendBookingConfirmation(params: {
   customerName: string
   startAt: Date
   endAt: Date
-  pinValidFrom: Date
-  pinValidUntil: Date
-  passcode: string
+  doorUrl: string
 }) {
   const dateStr = params.startAt.toLocaleDateString('ja-JP', {
     year: 'numeric',
@@ -49,16 +47,6 @@ export async function sendBookingConfirmation(params: {
     minute: '2-digit',
     timeZone: 'Asia/Tokyo',
   })
-  const pinFromStr = params.pinValidFrom.toLocaleTimeString('ja-JP', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'Asia/Tokyo',
-  })
-  const pinUntilStr = params.pinValidUntil.toLocaleTimeString('ja-JP', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'Asia/Tokyo',
-  })
 
   await pushMessage(params.lineUserId, [
     {
@@ -67,11 +55,11 @@ export async function sendBookingConfirmation(params: {
         `【予約完了】\n` +
         `${params.customerName}様、ご予約が確定しました！\n\n` +
         `📅 日時: ${dateStr} ${startStr}〜${endStr}\n\n` +
-        `🔑 入室PINコード: ${params.passcode}\n` +
-        `⏰ 有効時間: ${pinFromStr}〜${pinUntilStr}\n\n` +
+        `🚪 当日はこちらからドアを開けてください\n` +
+        `${params.doorUrl}\n\n` +
         `【ご来店時の注意】\n` +
-        `・到着後、ドアのキーパッドにPINを入力してください\n` +
-        `・終了時間になると自動で施錠されます\n` +
+        `・予約時間になったらリンクから解錠してください\n` +
+        `・退室時は必ず施錠ボタンを押してください\n` +
         `・ご不明な点はLINEでご連絡ください`,
     },
   ])

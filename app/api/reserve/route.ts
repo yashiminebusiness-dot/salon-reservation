@@ -2,12 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticate } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { createSquareBooking, cancelSquareBooking } from '@/lib/square'
-import { createTimedPasscode, deletePasscode } from '@/lib/sesami'
 import { sendBookingConfirmation } from '@/lib/line'
 
-const INTERVAL_DAYS = 3       // 再予約まで必要な日数
-const PIN_BUFFER_MINUTES = 5  // PIN 有効期間の前後バッファ（分）
-const SESSION_MINUTES = 30    // 施術時間（分）
+const INTERVAL_DAYS = 3      // 再予約まで必要な日数
+const SESSION_MINUTES = 30   // 施術時間（分）
 
 export async function POST(req: NextRequest) {
   // 1. 認証
@@ -31,10 +29,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'start_at is required' }, { status: 400 })
   }
 
-  const startAt      = new Date(start_at)
-  const endAt        = new Date(startAt.getTime() + SESSION_MINUTES * 60 * 1000)
-  const pinValidFrom = new Date(startAt.getTime() - PIN_BUFFER_MINUTES * 60 * 1000)
-  const pinValidUntil = new Date(endAt.getTime() + PIN_BUFFER_MINUTES * 60 * 1000)
+  const startAt = new Date(start_at)
+  const endAt   = new Date(startAt.getTime() + SESSION_MINUTES * 60 * 1000)
 
   // 4. 3日間隔チェック（Supabase）
   const { data: recentBookings } = await supabase
@@ -56,22 +52,19 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // 5. Supabase に予約レコードを INSERT（競合状態対策：UNIQUE 制約で重複を防ぐ）
+  // 5. Supabase に予約レコードを INSERT（UNIQUE 制約で重複を防ぐ）
   const { data: booking, error: insertError } = await supabase
     .from('bookings')
     .insert({
       customer_id: customer.id,
       start_at: startAt.toISOString(),
       end_at: endAt.toISOString(),
-      pin_valid_from: pinValidFrom.toISOString(),
-      pin_valid_until: pinValidUntil.toISOString(),
       status: 'confirmed',
     })
     .select()
     .single()
 
   if (insertError) {
-    // UNIQUE 制約違反 = 同一時間帯に既に予約あり
     if (insertError.code === '23505') {
       return NextResponse.json(
         { error: 'This time slot is already booked', code: 'SLOT_TAKEN' },
@@ -91,59 +84,34 @@ export async function POST(req: NextRequest) {
     })
   } catch (err) {
     console.error('Square booking creation failed:', err)
-    // ロールバック: Supabase レコードを削除
     await supabase.from('bookings').delete().eq('id', booking.id)
     return NextResponse.json({ error: 'Failed to create booking' }, { status: 500 })
   }
 
-  // 7. SESAMI パスコード発行
-  let passcode: string
-  let passcodeId: string
-  try {
-    const result = await createTimedPasscode({
-      validFrom: pinValidFrom,
-      validUntil: pinValidUntil,
-      name: `予約 ${customer.name} ${startAt.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}`,
-    })
-    passcode = result.passcode
-    passcodeId = result.passcodeId
-  } catch (err) {
-    console.error('SESAMI passcode creation failed:', err)
-    // ロールバック: Square 予約 + Supabase レコードを削除
-    await cancelSquareBooking(squareBooking.id!)
-    await supabase.from('bookings').delete().eq('id', booking.id)
-    return NextResponse.json({ error: 'Failed to issue passcode' }, { status: 500 })
-  }
-
-  // 8. Supabase の予約レコードを更新（Square ID + SESAMI ID）
+  // 7. Supabase の予約レコードを更新（Square ID）
   await supabase
     .from('bookings')
-    .update({
-      square_booking_id: squareBooking.id,
-      sesami_passcode_id: passcodeId,
-    })
+    .update({ square_booking_id: squareBooking.id })
     .eq('id', booking.id)
 
-  // 9. LINE 通知（失敗してもロールバックしない）
+  // 8. LINE 通知（ドア操作ページURLを送付）
+  const doorUrl = `${process.env.NEXT_PUBLIC_APP_URL}/door`
   try {
     await sendBookingConfirmation({
       lineUserId: customer.line_user_id,
       customerName: customer.name ?? 'お客様',
       startAt,
       endAt,
-      pinValidFrom,
-      pinValidUntil,
-      passcode,
+      doorUrl,
     })
   } catch (err) {
     console.error('LINE notification failed:', err)
-    // 予約自体は確定済みなのでエラーにしない
   }
 
   return NextResponse.json({
     booking_id: booking.id,
     start_at: startAt.toISOString(),
     end_at: endAt.toISOString(),
-    message: 'PINコードをLINEに送信しました',
+    message: 'ドア操作URLをLINEに送信しました',
   })
 }
