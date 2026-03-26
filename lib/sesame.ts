@@ -46,9 +46,10 @@ function computeSign(): string {
   const timestamp = Math.floor(Date.now() / 1000)
   const buf = Buffer.alloc(4)
   buf.writeUInt32LE(timestamp >>> 0, 0)
+  const message = buf.subarray(1, 4)  // 上位3バイト（[1:4]）
   const key = Buffer.from(SECRET_KEY, 'hex')
-  const mac = aesCmac(key, buf)
-  return mac.subarray(0, 4).toString('base64')
+  const mac = aesCmac(key, message)
+  return mac.toString('hex')
 }
 
 async function sendCommand(cmd: number, historyTag: string) {
