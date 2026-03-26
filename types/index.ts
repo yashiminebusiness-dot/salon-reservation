@@ -21,8 +21,8 @@ export interface Booking {
   square_booking_id: string | null
   start_at: string
   end_at: string
-  pin_valid_from: string
-  pin_valid_until: string
+  pin_valid_from: string | null
+  pin_valid_until: string | null
   sesami_passcode_id: string | null
   status: BookingStatus
   created_at: string

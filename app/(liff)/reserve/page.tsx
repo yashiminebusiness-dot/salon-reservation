@@ -4,8 +4,6 @@ import { useEffect, useState } from 'react'
 import liff from '@line/liff'
 import type { TimeSlot } from '@/types'
 
-const DAYS_TO_SHOW = 14  // 2週間分を表示
-
 function getWeekDates(offset: number): Date[] {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -118,7 +116,7 @@ export default function ReservePage() {
       <div className="min-h-screen flex flex-col items-center justify-center px-4 text-center">
         <div className="text-5xl mb-4">✅</div>
         <h1 className="text-xl font-bold mb-2">予約が確定しました！</h1>
-        <p className="text-gray-600">PINコードをLINEでお送りしました。</p>
+        <p className="text-gray-600">予約確認をLINEでお送りしました。</p>
       </div>
     )
   }

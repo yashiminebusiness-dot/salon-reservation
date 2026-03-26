@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { supabase } from '@/lib/supabase'
-import { deletePasscode } from '@/lib/sesami'
 import { sendRegistrationComplete, sendSubscriptionDeactivated } from '@/lib/line'
 import { createSquareSubscription } from '@/lib/square'
 
@@ -140,19 +139,12 @@ async function handleSubscriptionDeactivated(obj: Record<string, unknown>) {
   const now = new Date().toISOString()
   const { data: futureBookings } = await supabase
     .from('bookings')
-    .select('id, sesami_passcode_id, square_booking_id')
+    .select('id, square_booking_id')
     .eq('customer_id', customer.id)
     .eq('status', 'confirmed')
     .gt('start_at', now)
 
   if (futureBookings?.length) {
-    for (const booking of futureBookings) {
-      // SESAMI PIN 削除
-      if (booking.sesami_passcode_id) {
-        try { await deletePasscode(booking.sesami_passcode_id) } catch { /* ignore */ }
-      }
-    }
-
     // Supabase の status を cancelled に一括更新
     const ids = futureBookings.map((b) => b.id)
     await supabase

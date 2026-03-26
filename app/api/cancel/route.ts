@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticate } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { cancelSquareBooking } from '@/lib/square'
-import { deletePasscode } from '@/lib/sesami'
 import { sendCancellationConfirmation } from '@/lib/line'
 
 export async function POST(req: NextRequest) {
@@ -32,17 +31,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Booking not found' }, { status: 404 })
   }
 
-  // 4. SESAMI パスコード削除
-  if (booking.sesami_passcode_id) {
-    try {
-      await deletePasscode(booking.sesami_passcode_id)
-    } catch (err) {
-      console.error('SESAMI passcode deletion failed:', err)
-      // 削除失敗でもキャンセル処理は続行（オーナーに要確認ログ）
-    }
-  }
-
-  // 5. Square 予約削除
+  // 4. Square 予約削除
   if (booking.square_booking_id) {
     try {
       await cancelSquareBooking(booking.square_booking_id)
